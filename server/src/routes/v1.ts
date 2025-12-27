@@ -287,10 +287,6 @@ const sendUpstreamError = (res: express.Response, error: Error) => {
   });
 };
 
-router.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
 router.get("/houses", (_req, res) => {
   res.json(houses);
 });
