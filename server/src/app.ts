@@ -4,6 +4,10 @@ import v1Router from "./routes/v1";
 
 const app = express();
 
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use(cors());
 app.use(express.json());
 

@@ -153,7 +153,8 @@ const buildCharacterId = (character: HpCharacter): string => {
 
   const name = normalizeString(character.name) ?? "";
   const actor = normalizeString(character.actor) ?? "";
-  const source = `${name}|${actor}`;
+  const house = normalizeString(character.house) ?? "";
+  const source = `${name}|${actor}|${house}`;
 
   return createHash("sha1").update(source).digest("hex");
 };
@@ -218,7 +219,12 @@ const fetchJson = async <T>(
       };
     }
 
-    const data = (await response.json()) as T;
+    const text = await response.text();
+    if (!text) {
+      return { ok: true, status: response.status, data: null as T };
+    }
+
+    const data = JSON.parse(text) as T;
     return { ok: true, status: response.status, data };
   } catch (error) {
     const err = error instanceof Error ? error : new Error("Unknown error");
@@ -276,8 +282,8 @@ const loadCharactersAll = async (): Promise<
 const sendUpstreamError = (res: express.Response, error: Error) => {
   logUpstreamError("HP API unavailable", error);
   res.status(502).json({
-    error: "upstream_unavailable",
-    message: "HP API is unavailable",
+    error: "bad_gateway",
+    message: "HP API unavailable",
   });
 };
 
@@ -322,20 +328,18 @@ router.get("/characters", async (req, res) => {
 router.get("/characters/:id", async (req, res) => {
   const { id } = req.params;
   const url = `${HP_API_BASE}/api/character/${id}`;
-  const result = await fetchJson<HpCharacter | HpCharacter[]>(url);
+  const result = await fetchJson<HpCharacter | HpCharacter[] | null>(url);
 
   if (result.ok) {
     const data = Array.isArray(result.data) ? result.data[0] : result.data;
-    if (!data) {
-      res.status(404).json({ error: "not_found", message: "Character not found" });
+    const isEmptyObject =
+      !!data && typeof data === "object" && !Array.isArray(data) && Object.keys(data).length === 0;
+
+    if (data && !isEmptyObject) {
+      res.json(toCharacterDetails(data));
       return;
     }
-    res.json(toCharacterDetails(data));
-    return;
-  }
-
-  const isNotFound = result.status === 404 || result.status === 400;
-  if (!isNotFound) {
+  } else if (result.status !== 404) {
     sendUpstreamError(res, result.error);
     return;
   }
