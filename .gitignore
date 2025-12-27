@@ -1,0 +1,16 @@
+.DS_Store
+.idea/
+.vscode/
+
+# Node
+**/node_modules/
+**/dist/
+**/.env
+
+# Xcode / Swift
+DerivedData/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
